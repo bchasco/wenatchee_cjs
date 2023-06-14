@@ -1,0 +1,40 @@
+---
+title: "Survival of juvenile Chinook Salmon from the Wenatchee River migrating through the upper mainstem of the Columbia River"
+author: "Brandon Chasco"
+date: "2023-06-13"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+
+Understanding the effects of the hydrosystem is important for the conservation and management of salmon. Impacts from the hydrosystem include both direct mortality from turbines and indirect mortality caused by changes in stream function, barriers to migration, changes in water flow and temperature, altered sediment transport, and increased predation risk. Estimating these effects helps identify the specific threats and provides insights into how to mitigate or minimize their impacts.
+
+In the Wenatchee Basin, salmon spawn in the three headwater tributaries: Chiwawa Creek, Nason Creek, and White River. The tributaries form the connect to the mainstem of the Wenatchee River at roughly the same location. Rotary screw traps are operated at the mouth of each stream, as well as ~40 downriver at the mouth of the Wenatchee River where it connects with the Columbia River. After the Wenatchee River meets the Columbia River, juvenile salmon migrating to the ocean encounter three mainstam Columbia River dams - Rock Island Dam, Wanapum Dam, and Priest Rapids Dam - before they are pass the next detection site at McNary Dam. Downstream of McNary, fish can be detected at any one of the three downstream dams as juvenile, or any of the dams from Bonneville Dam to McNary Dam as returning adults. 
+
+The goal of this initial research is to build a simulation model to test the estimability of parameters that describe downstream survival of Chinook salmon in Columbia River between the mouth of Wenatchee River and McNary Dam.
+
+## Simulated data set
+
+Individual fish at monitored using Passive Integrated Tags (PIT). Fish are captured and tagged as juvenile at any of the sites within the Wenatchee River basin and capture throughout the hydro-system as juveniles or adults. 
+
+```{r}
+
+  n_locations <- 3 #Number of survey locations
+  n_individuals <- 1000     # Number of time points
+  capture <- matrix(NA , n_individuals , n_locations) #Capture history matrix
+  time <- sample(0:99,1000,replace = TRUE) # Time points
+  
+  logit_p <- rep(0.5 , n_locations) # Logit-transformed capture probabilities
+  logit_d <- rep(0.9 , n_locations) # Logit-transformed detection probabilities
+  log_lambda <- -1.0     # Log lambda for time-density model
+  
+  p = exp(logit_p) / (1 + exp(logit_p)) # Capture probabilities
+  d = exp(logit_d) / (1 + exp(logit_d)) # Detection probabilities
+
+
+```
+
