@@ -30,27 +30,23 @@ Type objective_function<Type>::operator() ()
     Type eta_phi_i = f_phi[0] + lam * t_i(i);
     Type phi_i = exp(eta_phi_i)/(1+exp(eta_phi_i)); // c_it probabilities
 
-    Type eta_p_i = f_p(0);
-    Type p_i = exp(eta_p_i)/(1+exp(eta_p_i));
     
     //likelihood of the first observation
     nll -= log(dbinom(Type(1.),Type(1.),phi_i));
-    //Observed process  
-    // nll -= log(dbinom(c_it(i,f_i[i]-1),z_it(i,j),p_i));
-    
+
     // Loop over survey locations
     for (int j = f_i[i]; j < n_loc; j++) {
       // Loop over capture histories 
 
       //Detection probability
-      // Type eta_p_i = f_p(0);
-      // Type p_i = exp(eta_p_i)/(1+exp(eta_p_i));
+      Type eta_p_i = f_p(0);
+      Type p_i = exp(eta_p_i)/(1+exp(eta_p_i));
 
       //Biological process
-      nll -= log(dbinom(z_it(i,j-1),Type(1.),phi_i));
+      nll -= log(dbinom(z_it(i,j),z_it(i,j-1),phi_i));
       
       //Observed process  
-      nll -= log(dbinom(z_it(i,j),c_it(i,j),p_i));
+      nll -= log(dbinom(c_it(i,j),z_it(i,j),p_i));
       
         // // Calculate the log-likelihood contribution for this cap occasion
         // if (c_it(i, j) == 1)

@@ -1,18 +1,20 @@
 #simulate data
+
 library(TMB)
 
 # set.seed(123) 
 
-n_locations <- 10 #Number of survey locations
+n_locations <- 3 #Number of survey locations
 n_individuals <- 10000     # Number of time points
 capture <- matrix(NA , n_individuals , n_locations) #Capture history matrix
+z <- matrix(NA , n_individuals , n_locations) #Capture history matrix
 
 time <- sample(0:5,n_individuals,replace = TRUE) # Time points
 
 # names(capture) <- c("Wen","MCN","DNSTRM") 
-logit_phi <- qlogis(rep(0.1 , n_locations)) # Logit-transformed capture probabilities
-logit_p <- qlogis(rep(0.9 , n_locations)) # Logit-transformed detection probabilities
-lam <- 0.0     # Log lambda for time-density model
+logit_phi <- qlogis(rep(0.6, n_locations)) # Logit-transformed capture probabilities
+logit_p <- qlogis(rep(0.1, n_locations)) # Logit-transformed detection probabilities
+lam <- 0     # Log lambda for time-density model
   
 
 
@@ -23,14 +25,18 @@ for (i in 1:nrow(capture)) {
     eta_phi = logit_phi[1] + lam * time[i]
     phi = plogis(eta_phi)
     
-    for (j in 1:n_locations) {
-        # Loop over capture occasions
-        # Probability of capture at location j and time k
+    z[i,1] <- rbinom(1,1,phi)
+    capture[i,1] <- rbinom(1,z[i,1],p)
+    
+    for (j in 2:n_locations) {
+      # Loop over capture occasions
+      # Probability of capture at location j and time k
 
-        # Probability of detection at location j
-        p_detect = plogis(logit_p);
-        # Calculate the log-likelihood contribution for this capture occasion
-        capture[i,j] <- rbinom(1,1,phi * p_detect)
+      # Probability of detection at location j
+      p = plogis(logit_p)[1];
+      # Calculate the log-likelihood contribution for this capture occasion
+      z[i,j] <- rbinom(1,z[i,j-1],phi)
+      capture[i,j] <- rbinom(1,z[i,j],p)
     }
 }
 
@@ -47,10 +53,10 @@ f <- na.omit(f[f<ncol(capture)])
 z <- IPMbook::zKnown(capture)
 z[is.na(z)] <- 0
 
-# try(dyn.unload("C:/research/wenatchee_cjs/code/wenatchee"))
+try(dyn.unload("code/wenatchee.dll"))
 
-compile("C:/research/wenatchee_cjs/code/wenatchee.cpp")
-dyn.load(dynlib("C:/research/wenatchee_cjs/code/wenatchee"))
+compile("code/wenatchee.cpp")
+dyn.load(dynlib("code/wenatchee"))
 # # 
 data <- list(c_it = as.matrix(capture), 
              z_it = as.matrix(z), 
@@ -65,7 +71,10 @@ obj <- MakeADFun(data,
                  DLL = "wenatchee")
 obj$hessian <- TRUE
 opt<-nlminb(obj$par,obj$fn,obj$gr)
-print(round(plogis(opt$par),2))
-paste(round(plogis(logit_phi[1]),2),round(plogis(logit_p[1]),2))# opt$hessian ## <-- FD hessian from optim
+
+print(round(c(logit_phi[1],logit_p[1],lam),2))
+print(round(opt$par,2))
+
+# paste(round(plogis(logit_phi[1]),2),round(plogis(logit_p[1]),2))# opt$hessian ## <-- FD hessian from optim
 # obj$he()    ## <-- Analytical hessian
 # sdreport(obj)
