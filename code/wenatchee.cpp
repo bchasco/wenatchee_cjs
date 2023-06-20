@@ -3,51 +3,66 @@
 template<class Type>
 Type objective_function<Type>::operator() ()
 {
+  
   // Data
-  DATA_MATRIX(capture);     // Capture history matrix
-  DATA_INTEGER(n_locations); // Number of survey locations
-  DATA_VECTOR(time);        // Time points
-  DATA_INTEGER(n_time);     // Number of time points
+  DATA_ARRAY(c_it);     // c_it history matrix
+  DATA_ARRAY(z_it);     // c_it history matrix
+  DATA_IVECTOR(f_i); // Number of survey locations
+  DATA_VECTOR(t_i);        // Time when fish leave Wenatchee mainstem.
+  // DATA_INTEGER(n_time);     // Number of time points
   
   // Parameters
-  PARAMETER_VECTOR(logit_p); // Logit-transformed capture probabilities
-  PARAMETER_VECTOR(logit_d); // Logit-transformed detection probabilities
-  PARAMETER(log_lambda);     // Log lambda for time-density model
+  PARAMETER_VECTOR(f_phi); // Logit-transformed c_it probabilities
+  PARAMETER_VECTOR(f_p); // Logit-transformed detection probabilities
+  PARAMETER(lam);     // Log lambda for time-density model
   
-  // Transform parameters
-  vector<Type> p = exp(logit_p) / (1 + exp(logit_p)); // Capture probabilities
-  vector<Type> d = exp(logit_d) / (1 + exp(logit_d)); // Detection probabilities
-  
+  int n_ind = c_it.dim[0]; //numver of individuals 
+  int n_loc = c_it.dim[1]; //number of locations
+
   // Initialize log-likelihood
   Type nll = 0;
   
+
   // Loop over individuals
-  for (int i = 0; i < capture.rows(); i++) {
-    int n_captures = capture.cols(); // Number of capture occasions for the individual
+  for (int i = 0; i < n_ind; i++) {
+    
+    //First observation
+    Type eta_phi_i = f_phi[0] + lam * t_i(i);
+    Type phi_i = exp(eta_phi_i)/(1+exp(eta_phi_i)); // c_it probabilities
+
+    Type eta_p_i = f_p(0);
+    Type p_i = exp(eta_p_i)/(1+exp(eta_p_i));
+    
+    //likelihood of the first observation
+    nll -= log(dbinom(Type(1.),Type(1.),phi_i));
+    //Observed process  
+    // nll -= log(dbinom(c_it(i,f_i[i]-1),z_it(i,j),p_i));
     
     // Loop over survey locations
-    for (int j = 0; j < n_locations; j++) {
-      // Loop over capture occasions
-      for (int k = 0; k < n_captures; k++) {
-        // Probability of capture at location j and time k
-        Type logit_p_capt = logit_p[j] + log_lambda * time[k];
-        Type p_capt = exp(logit_p_capt) / (1 + exp(logit_p_capt));
-        
-        // Probability of detection at location j
-        Type p_detect = d[j];
-        
-        // Calculate the log-likelihood contribution for this capture occasion
-        if (capture(i, k) == 1)
-          nll -= log(p_capt); // Individual was captured
-        else
-          nll -= log(1 - p_capt); // Individual was not captured
-        
-        // Calculate the log-likelihood contribution for this detection occasion
-        if (k > 0 && capture(i, k - 1) == 1)
-          nll -= log(p_detect); // Individual was detected
-        else
-          nll -= log(1 - p_detect); // Individual was not detected
-      }
+    for (int j = f_i[i]; j < n_loc; j++) {
+      // Loop over capture histories 
+
+      //Detection probability
+      // Type eta_p_i = f_p(0);
+      // Type p_i = exp(eta_p_i)/(1+exp(eta_p_i));
+
+      //Biological process
+      nll -= log(dbinom(z_it(i,j-1),Type(1.),phi_i));
+      
+      //Observed process  
+      nll -= log(dbinom(z_it(i,j),c_it(i,j),p_i));
+      
+        // // Calculate the log-likelihood contribution for this cap occasion
+        // if (c_it(i, j) == 1)
+        //   nll -= log(p_capt); // Individual was capd
+        // else
+        //   nll -= log(1 - p_capt); // Individual was not capd
+        // 
+        // // Calculate the log-likelihood contribution for this detection occasion
+        // if (j > 0 && c_it(i, j - 1) == 1)
+        //   nll -= log(p_detect); // Individual was detected
+        // else
+        //   nll -= log(1 - p_detect); // Individual was not detected
     }
   }
   

@@ -35,6 +35,5 @@ Individual fish at monitored using Passive Integrated Tags (PIT). Fish are captu
   p = exp(logit_p) / (1 + exp(logit_p)) # Capture probabilities
   d = exp(logit_d) / (1 + exp(logit_d)) # Detection probabilities
 
-
+  plot(1)
 ```
-
